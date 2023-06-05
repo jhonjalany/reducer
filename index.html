@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image File Size Reducer</title>
+    <style>
+        body {
+            text-align: center;
+            padding: 40px;
+        }
+        #inputImage {
+            display: none;
+        }
+        .image-container {
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .image-container img {
+            max-width: 400px;
+            max-height: 600px;
+            margin: 10px;
+        }
+        .image-label {
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .download-button {
+            display: none;
+            margin-top: 10px;
+        }
+        .bottom-text {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Image File Size Reducer</h1>
+    <button onclick="uploadImage()">Upload Image</button>
+    <input type="file" id="inputImage" accept="image/*" onchange="handleImage()" />
+    <div class="image-container" id="imageContainer">
+        <div>
+            <img id="originalImage" alt="Original Image" />
+            <div class="image-label">Original Image</div>
+            <div id="originalFileSize"></div>
+            <div class="bottom-text">Your smile is enough to use me</div>
+        </div>
+        <div>
+            <img id="reducedImage" alt="Reduced Image" />
+            <div class="image-label">Reduced Image</div>
+            <div id="reducedFileSize"></div>
+            <a id="downloadButton" class="download-button" download>Download</a>
+        </div>
+    </div>
+    <script>
+        function uploadImage() {
+            const input = document.getElementById('inputImage');
+            input.click();
+        }
+
+        function getFileSize(file) {
+            const fileSizeInBytes = file.size;
+            const fileSizeInKb = fileSizeInBytes / 1024;
+            const fileSizeInMb = fileSizeInKb / 1024;
+
+            if (fileSizeInMb >= 1) {
+                return fileSizeInMb.toFixed(2) + ' MB';
+            } else if (fileSizeInKb >= 1) {
+                return fileSizeInKb.toFixed(2) + ' KB';
+            } else {
+                return fileSizeInBytes + ' Bytes';
+            }
+        }
+
+        function displayFileSize() {
+            const input = document.getElementById('inputImage');
+            const originalFileSize = document.getElementById('originalFileSize');
+            const reducedFileSize = document.getElementById('reducedFileSize');
+            const downloadButton = document.getElementById('downloadButton');
+            const file = input.files[0];
+
+            originalFileSize.textContent = 'Original Image Size: ' + getFileSize(file);
+
+            const reducedImage = document.getElementById('reducedImage');
+            reducedImage.addEventListener('load', function () {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = reducedImage.width;
+                canvas.height = reducedImage.height;
+                ctx.drawImage(reducedImage, 0, 0);
+                const dataUrl = canvas.toDataURL(file.type);
+                const reducedFile = dataURLtoFile(dataUrl, file.name);
+                reducedFileSize.textContent = 'Reduced Image Size: ' + getFileSize(reducedFile);
+
+                // Enable download button and set download attribute
+                downloadButton.style.display = 'inline-block';
+                downloadButton.href = dataUrl;
+                downloadButton.download = file.name;
+            });
+        }
+
+        function handleImage() {
+            const input = document.getElementById('inputImage');
+            const imageContainer = document.getElementById('imageContainer');
+            const originalImage = document.getElementById('originalImage');
+            const reducedImage = document.getElementById('reducedImage');
+            const originalFileSize = document.getElementById('originalFileSize');
+            const reducedFileSize = document.getElementById('reducedFileSize');
+            const downloadButton = document.getElementById('downloadButton');
+
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const img = new Image();
+                img.onload = function () {
+                    originalImage.src = img.src;
+                    reducedImage.src = '';
+
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    const mimeType = file.type;
+                    const quality = 0.3; // Adjust the quality value as needed
+                    const dataUrl = canvas.toDataURL(mimeType, quality);
+                    reducedImage.src = dataUrl;
+
+                    originalFileSize.textContent = '';
+                    reducedFileSize.textContent = '';
+                    displayFileSize();
+
+                    imageContainer.style.display = 'flex';
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function dataURLtoFile(dataUrl, filename) {
+            const arr = dataUrl.split(',');
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) {
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new File([u8arr], filename, { type: mime });
+        }
+    </script>
+</body>
+</html>
